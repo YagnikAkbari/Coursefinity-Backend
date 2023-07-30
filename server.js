@@ -17,8 +17,8 @@ app.set("view engine", "ejs");
 app.use(express.json());
 
 const store = new MongoDBStore({
-  uri: process.env.MONGODB_URL,
   collection: "sessions",
+  uri: process.env.MONGODB_URL,
 });
 
 app.use(bodyParser.urlencoded({ extended: false }));
