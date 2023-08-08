@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
-const Learner = require("../model/authLearner");
-const Instructor = require("../model/authInstructor");
+const Learner = require("../model/learner");
+const Instructor = require("../model/instructor");
 
 exports.learnerSignUp = async (req, res, next) => {
   try {
@@ -87,7 +87,7 @@ exports.learnerSignIn = async (req, res, next) => {
     if (doMatch) {
       console.log("Login");
       req.session.isLoggedIn = true;
-      req.session.user = learner;
+      req.session.learner = learner;
 
       await req.session.save();
       return res
@@ -122,7 +122,7 @@ exports.instructorSignIn = async (req, res, next) => {
     if (doMatch) {
       console.log("Login");
       req.session.isLoggedIn = true;
-      req.session.user = instructor;
+      req.session.instructor = instructor;
 
       await req.session.save();
       return res
@@ -136,4 +136,10 @@ exports.instructorSignIn = async (req, res, next) => {
     console.error(err);
     return res.status(500).send({ message: "Internal Server Error" });
   }
+};
+
+exports.postLogout = (req, res, next) => {
+  req.session.destroy(err => {
+    return res.status(200).send({ message: "logout" });
+  });
 };
