@@ -14,7 +14,9 @@ exports.learnerSignUp = async (req, res, next) => {
 
     const existingUser = await Learner.findOne({ email: email });
     if (existingUser) {
-      return res.status(409).send({ message: "User is already registered!" });
+      return res
+        .status(409)
+        .send({ message: "Email already registered with us." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -24,7 +26,7 @@ exports.learnerSignUp = async (req, res, next) => {
       password: hashedPassword,
     });
 
-    const result = await learner.save();
+    await learner.save();
     console.log("Learner Registered.");
     return res
       .status(201)
@@ -47,7 +49,9 @@ exports.instructorSignUp = async (req, res, next) => {
 
     const existingUser = await Instructor.findOne({ email: email });
     if (existingUser) {
-      return res.status(409).send({ message: "User is already registered!" });
+      return res
+        .status(409)
+        .send({ message: "Email already registered with us." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -139,7 +143,7 @@ exports.instructorSignIn = async (req, res, next) => {
 };
 
 exports.postLogout = (req, res, next) => {
-  req.session.destroy(err => {
+  req.session.destroy((err) => {
     return res.status(200).send({ message: "logout" });
   });
 };
