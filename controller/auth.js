@@ -61,7 +61,7 @@ exports.instructorSignUp = async (req, res, next) => {
       password: hashedPassword,
     });
 
-    const result = await instructor.save();
+    await instructor.save();
     console.log("Instructor Registered.");
     return res
       .status(201)
@@ -89,14 +89,17 @@ exports.learnerSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, learner.password);
     if (doMatch) {
-      console.log("Login");
+      console.log("Learner Login");
       req.session.isLoggedIn = true;
       req.session.learner = learner;
 
       await req.session.save();
-      return res
-        .status(200)
-        .send({ message: "Login Successfully", role: "learner" });
+
+      return res.status(200).send({
+        message: "Login Successfully",
+        role: "learner",
+        session: req.session,
+      });
     } else {
       console.log("Error");
       return res.status(401).send({ message: "Invalid credentials" });
@@ -124,14 +127,16 @@ exports.instructorSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, instructor.password);
     if (doMatch) {
-      console.log("Login");
+      console.log("Instructor Login");
       req.session.isLoggedIn = true;
       req.session.instructor = instructor;
 
       await req.session.save();
-      return res
-        .status(200)
-        .send({ message: "Login Successfully", role: "instructor" });
+      return res.status(200).send({
+        message: "Login Successfully",
+        role: "instructor",
+        session: req.session,
+      });
     } else {
       console.log("Error");
       return res.status(401).send({ message: "Invalid credentials" });
