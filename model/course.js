@@ -7,6 +7,11 @@ const courseSchema = new Schema({
     required: true,
   },
 
+  courseDescription: {
+    type: String,
+    required: true,
+  },
+
   courseAuthor: {
     type: Schema.Types.ObjectId,
     ref: "Instructor",
@@ -18,13 +23,23 @@ const courseSchema = new Schema({
     required: true,
   },
 
-  coursePrice: {
+  courseIntroVideoUrl: {
+    type: String,
+    required: true,
+  },
+
+  courseTotalQuiz: {
     type: Number,
     required: true,
   },
 
-  courseDescription: {
-    type: String,
+  courseTotalAssignment: {
+    type: Number,
+    required: true,
+  },
+
+  coursePrice: {
+    type: Number,
     required: true,
   },
 
@@ -35,6 +50,16 @@ const courseSchema = new Schema({
 
   courseDuration: {
     type: Number,
+    required: true,
+  },
+
+  courseCategory: {
+    type: String,
+    required: true,
+  },
+
+  courseAuthorImage: {
+    type: String,
     required: true,
   },
 
@@ -52,13 +77,12 @@ const courseSchema = new Schema({
         type: String,
         required: true,
       },
+      moduleType: {
+        type: String,
+        required: true,
+      },
     },
   ],
-
-  courseCategory: {
-    type: String,
-    required: true,
-  },
 });
 
 module.exports = mongoose.model("Course", courseSchema);

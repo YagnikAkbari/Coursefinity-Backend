@@ -13,14 +13,17 @@ const app = express();
 
 const authRoutes = require("./routes/auth");
 const courseRoutes = require("./routes/course");
+const paymentRoutes = require("./routes/payment");
 
 const store = new MongoDBStore({
   uri: MONGODB_URL,
   collection: "sessions",
 });
 
+app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(express.json());
 
 app.use(
   session({
@@ -36,7 +39,7 @@ app.use(
 
 app.use(authRoutes);
 app.use(courseRoutes);
-app.use(express.json());
+app.use(paymentRoutes);
 
 app.use((req, res, next) => {
   if (!req.session.learner) {
@@ -71,6 +74,21 @@ app.use((req, res, next) => {
 app.post("/googleAuth", (req, res, next) => {
   const data = req.body;
   console.log(data);
+});
+
+app.post("/resetEmail", (req, res, next) => {
+  const data = req.body;
+  console.log(data);
+  res.status(200).send({ message: "email send successful." });
+});
+
+app.post("/resetPassword", (req, res, next) => {
+  const data = req.body;
+  console.log(data);
+  if (data.pass !== data.cpass) {
+    return res.status(400).send({ message: "passowrd not matched!" });
+  }
+  res.status(200).send({ message: "passowrd change successful." });
 });
 
 mongoose
