@@ -12,6 +12,9 @@ exports.payment = async (req, res) => {
     automatic_payment_methods: {
       enabled: true,
     },
+    metadata: {
+      courseId,
+    },
   });
 
   res.send({
