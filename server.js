@@ -6,8 +6,8 @@ const MongoDBStore = require("connect-mongodb-session")(session);
 const Learner = require("./model/learner");
 const Instructor = require("./model/instructor");
 
-const MONGODB_URL =
-  "mongodb+srv://YagnikAkbari12:Ppsv%402020@cluster0.dq3pwce.mongodb.net/CourseFinityDB?retryWrites=true&w=majority";
+require("dotenv").config();
+
 mongoose.set("strictQuery", false);
 const app = express();
 
@@ -16,15 +16,66 @@ const courseRoutes = require("./routes/course");
 const paymentRoutes = require("./routes/payment");
 
 const store = new MongoDBStore({
-  uri: MONGODB_URL,
   collection: "sessions",
+  uri: process.env.MONGODB_URL,
 });
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(express.json());
 
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  (request, response) => {
+    let event = request.body;
+    // Otherwise use the basic event deserialized with JSON.parse
+    if (process.env.ENDPOINT_SECRET) {
+      const signature = request.headers["stripe-signature"];
+      try {
+        event = stripe.webhooks.constructEvent(
+          request.body,
+          signature,
+          process.env.ENDPOINT_SECRET
+        );
+      } catch (err) {
+        console.log(`⚠️  Webhook signature verification failed.`, err.message);
+        return response.sendStatus(400);
+      }
+    }
+
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        const paymentIntent = event.data.object;
+        // Then define and call a method to handle the successful payment intent.
+        // handlePaymentIntentSucceeded(paymentIntent);
+        break;
+      case "payment_method.attached":
+        const paymentMethod = event.data.object;
+        // Then define and call a method to handle the successful attachment of a PaymentMethod.
+        break;
+      case "subscription_schedule.canceled":
+        const subscriptionScheduleCanceled = event.data.object;
+        // Then define and call a function to handle the event subscription_schedule.canceled
+        break;
+      case "charge.captured":
+        const chargeCaptured = event.data.object;
+        // Then define and call a function to handle the event charge.captured
+        break;
+      case "invoice.payment_succeeded":
+        const invoicePaymentSucceeded = event.data.object;
+        // Then define and call a function to handle the event invoice.payment_succeeded
+        break;
+      default:
+        console.log(`Unhandled event type ${event.type}.`);
+    }
+
+    response.send();
+  }
+);
+
+app.use(express.json());
 app.use(
   session({
     secret: "My Secret",
@@ -92,7 +143,7 @@ app.post("/resetPassword", (req, res, next) => {
 });
 
 mongoose
-  .connect(MONGODB_URL)
+  .connect(process.env.MONGODB_URL)
   .then((db) => {
     app.listen(5050);
     console.log("Database is Connected.");
