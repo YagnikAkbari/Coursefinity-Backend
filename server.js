@@ -49,8 +49,6 @@ app.post(
     switch (event.type) {
       case "payment_intent.succeeded":
         const paymentIntent = event.data.object;
-        // Then define and call a method to handle the successful payment intent.
-        // handlePaymentIntentSucceeded(paymentIntent);
         break;
       default:
         console.log(`Unhandled event type ${event.type}.`);
@@ -61,6 +59,9 @@ app.post(
 );
 
 app.use(express.static(path.resolve(__dirname, "build")));
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve("build", "index.html"));
+});
 
 app.use(express.json());
 app.use(
