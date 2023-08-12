@@ -1,7 +1,5 @@
 const Course = require("../model/course");
-const stripe = require("stripe")(
-  "sk_test_51NdZ2MSHE4fCvIOP5lHpHlFNjafdRxAXShEa3mEJ7rOmJTf492HcZwra4EzM2OyQDHlMzHJK2p65ELrNnM8kBqxk00jtrxVDsU"
-);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.payment = async (req, res) => {
   const { courseId } = req.body;
