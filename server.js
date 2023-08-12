@@ -5,6 +5,7 @@ const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const Learner = require("./model/learner");
 const Instructor = require("./model/instructor");
+const path = require("path");
 
 require("dotenv").config();
 
@@ -74,6 +75,8 @@ app.post(
     response.send();
   }
 );
+
+app.use(express.static(path.resolve(__dirname, "build")));
 
 app.use(express.json());
 app.use(
