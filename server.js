@@ -59,9 +59,6 @@ app.post(
 );
 
 app.use(express.static(path.resolve(__dirname, "build")));
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve("build", "index.html"));
-});
 
 app.use(express.json());
 app.use(
@@ -79,6 +76,10 @@ app.use(
 app.use(authRoutes);
 app.use(courseRoutes);
 app.use(paymentRoutes);
+
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve("build", "index.html"));
+});
 
 app.use((req, res, next) => {
   if (!req.session.learner) {
