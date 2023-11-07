@@ -17,6 +17,20 @@ const authlearnerSchema = new Schema({
     type: String,
     required: true,
   },
+
+  favouriteCourses: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
+
+  myCourses: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
 });
 
 module.exports = mongoose.model("Learner", authlearnerSchema);

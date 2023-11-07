@@ -2,7 +2,7 @@ const Course = require("../model/course");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.payment = async (req, res) => {
-  const { courseId } = req.body;
+  const { courseId, email } = req.body;
 
   const course = await Course.findOne({ _id: courseId });
 
@@ -14,6 +14,7 @@ exports.payment = async (req, res) => {
     },
     metadata: {
       courseId,
+      email,
     },
   });
 

@@ -14,9 +14,7 @@ exports.learnerSignUp = async (req, res, next) => {
 
     const existingUser = await Learner.findOne({ email: email });
     if (existingUser) {
-      return res
-        .status(409)
-        .send({ message: "Email already registered with us." });
+      return res.status(409).send({ message: "Email already registered!" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -24,6 +22,7 @@ exports.learnerSignUp = async (req, res, next) => {
       name: name,
       email: email,
       password: hashedPassword,
+      myCourses: [],
     });
 
     await learner.save();
@@ -44,7 +43,7 @@ exports.instructorSignUp = async (req, res, next) => {
     if (!email || !password || !name) {
       return res
         .status(400)
-        .send({ message: "Name, Email and password are required" });
+        .send({ message: "Name, Email and passwords are required" });
     }
 
     const existingUser = await Instructor.findOne({ email: email });
@@ -59,6 +58,7 @@ exports.instructorSignUp = async (req, res, next) => {
       name: name,
       email: email,
       password: hashedPassword,
+      myCourses: [],
     });
 
     await instructor.save();
@@ -89,16 +89,14 @@ exports.learnerSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, learner.password);
     if (doMatch) {
-      console.log("Learner Login");
+      console.log("Login");
       req.session.isLoggedIn = true;
       req.session.learner = learner;
-
       await req.session.save();
 
       return res.status(200).send({
         message: "Login Successfully",
         role: "learner",
-        session: req.session,
       });
     } else {
       console.log("Error");
@@ -132,10 +130,10 @@ exports.instructorSignIn = async (req, res, next) => {
       req.session.instructor = instructor;
 
       await req.session.save();
+
       return res.status(200).send({
         message: "Login Successfully",
         role: "instructor",
-        session: req.session,
       });
     } else {
       console.log("Error");
@@ -148,7 +146,7 @@ exports.instructorSignIn = async (req, res, next) => {
 };
 
 exports.postLogout = (req, res, next) => {
-  req.session.destroy((err) => {
+  req.session.destroy(err => {
     return res.status(200).send({ message: "logout" });
   });
 };
