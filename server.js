@@ -110,12 +110,6 @@ app.post(
   }
 );
 
-// app.use(express.static(path.resolve(__dirname, "build")));
-
-// app.get("*", (req, res) => {
-//   res.sendFile(path.resolve("build", "index.html"));
-// });
-
 app.use((req, res, next) => {
   if (!req.session.learner) {
     return next();
@@ -316,6 +310,12 @@ app.get("/favouriteCourseList", async (req, res, next) => {
   } catch (err) {
     console.log(err);
   }
+});
+
+app.use(express.static(path.resolve(__dirname, "build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve("build", "index.html"));
 });
 
 mongoose
