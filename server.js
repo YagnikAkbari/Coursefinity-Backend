@@ -10,7 +10,8 @@ const Course = require("./model/course");
 const path = require("path");
 const multer = require("multer");
 
-const mongodb_url = process.env.MONGODB_URL;
+const mongodb_url =
+  "mongodb+srv://YagnikAkbari12:Ppsv%402020@cluster0.dq3pwce.mongodb.net/CourseFinityDB?retryWrites=true&w=majority";
 
 require("dotenv").config();
 
@@ -33,7 +34,9 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+app.use(express.static(path.join(__dirname, "public")));
 app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/videos", express.static(path.join(__dirname, "videos")));
 
 app.use(
   session({
@@ -44,38 +47,15 @@ app.use(
   })
 );
 
-const fileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "images");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === "image/png" ||
-    file.mimetype === "image/jpg" ||
-    file.mimetype === "image/jpeg"
-  ) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
-
-app.use(
-  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
-);
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/images", express.static(path.join(__dirname, "images")));
+const upload = multer({ dest: "images/", fieldname: "image" });
+const upload1 = multer({ dest: "videos/", fieldname: "file" });
 
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
   async (request, response) => {
     let event = request.body;
-
+    const learnerSession = req.session.learner._id;
     if (process.env.ENDPOINT_SECRET) {
       const signature = request.headers["stripe-signature"];
       try {
@@ -100,6 +80,16 @@ app.post(
           email: paymentIntent.metadata.email,
         });
         user.courseId = user.courseId.push(paymentIntent.metadata.courseId);
+
+        Course.findByIdAndUpdate(
+          {
+            _id: learnerSession,
+          },
+          { myCourses: user.courseId }
+        ).then(() => {
+          console.log("Added");
+        });
+
         await user.save();
         break;
       default:
@@ -109,6 +99,12 @@ app.post(
     response.send();
   }
 );
+
+// app.use(express.static(path.resolve(__dirname, "build")));
+
+// app.get("*", (req, res) => {
+//   res.sendFile(path.resolve("build", "index.html"));
+// });
 
 app.use((req, res, next) => {
   if (!req.session.learner) {
@@ -146,28 +142,28 @@ app.use(paymentRoutes);
 app.post("/createCourse", async (req, res, next) => {
   try {
     const data = req.body;
+
     const session_instructor = req.session.instructor;
+    const modules = data.courseModules;
 
     const course = new Course({
       courseTitle: data.courseTitle,
       courseAuthor: session_instructor,
-      courseImageUrl: data.courseImageUrl,
+      courseImageUrl: "",
       coursePrice: data.coursePrice,
       courseDescription: data.courseDescription,
       courseLanguage: data.courseLanguage,
       courseDuration: data.courseDuration,
-      courseModules: data.courseModules,
+      courseModules: modules,
       courseCategory: data.courseCategory,
-      courseTotalQuiz: +data.courseTotalQuiz,
-      courseTotalAssignment: +data.courseTotalAssignment,
       courseAuthorImage:
         "https://images.unsplash.com/photo-1692182549439-2a78c119dc40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw3fHx8ZW58MHx8fHx8&auto=format&fit=crop&w=500&q=60",
-      courseIntroVideoUrl: "CXcdzxvv",
+      courseAuthorName: session_instructor.name,
+      courseIntroVideoUrl: "Introducing FigJam AI.mp4",
     });
 
     const result = await course.save();
     console.log("Course uploaded!.");
-
     if (result) {
       const recentCourseId = result._id;
       const updatedUser = await Instructor.findByIdAndUpdate(
@@ -181,13 +177,54 @@ app.post("/createCourse", async (req, res, next) => {
         return res.status(404).send({ message: "User not found" });
       }
 
-      return res.status(201).send({ message: "Added to my Course!" });
+      return res
+        .status(201)
+        .send({ message: "Added to my Course!", courseId: result._id });
     }
   } catch (err) {
     console.log(err);
 
-    res.status(500).send({ message: "Error processing new cours!" });
+    res.status(500).send({ message: "Error processing new course!" });
   }
+});
+
+app.post("/uploadThumbnail", upload.single("image"), async (req, res, next) => {
+  const imageUrl = req.file ? req.file.path : "";
+  // console.log(imageUrl);
+  const courseId = req.body.courseId;
+
+  const response = await Course.findByIdAndUpdate(
+    {
+      _id: courseId,
+    },
+    { courseImageUrl: imageUrl }
+  );
+
+  if (response) {
+    console.log("UPLOAD");
+  } else {
+    console.log("Error");
+  }
+});
+
+app.post("/uploadModules", (req, res, next) => {
+  const courseId = req.body;
+  // const mmoduleData = req.body;
+
+  console.log(courseId);
+
+  // const response = await Course.findByIdAndUpdate(
+  //   {
+  //     _id: courseId,
+  //   },
+  //   { courseImageUrl: imageUrl }
+  // );
+
+  // if (response) {
+  //   console.log("UPLOAD");
+  // } else {
+  //   console.log("Error");
+  // }
 });
 
 app.post("/googleAuth", (req, res, next) => {
@@ -240,6 +277,7 @@ app.delete("/removefavouriteCourse", async (req, res, next) => {
 app.get("/mycreatedcourses", async (req, res, next) => {
   try {
     const session_instructor_id = req.session.instructor._id;
+    console.log();
     const response = await Instructor.find({ _id: session_instructor_id });
 
     const myCourseList = response[0].myCourses;
@@ -310,12 +348,6 @@ app.get("/favouriteCourseList", async (req, res, next) => {
   } catch (err) {
     console.log(err);
   }
-});
-
-app.use(express.static(path.resolve(__dirname, "build")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve("build", "index.html"));
 });
 
 mongoose

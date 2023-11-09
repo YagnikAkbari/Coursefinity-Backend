@@ -23,14 +23,6 @@ const courseSchema = new Schema({
     type: String,
   },
 
-  courseTotalQuiz: {
-    type: Number,
-  },
-
-  courseTotalAssignment: {
-    type: Number,
-  },
-
   coursePrice: {
     type: Number,
   },
@@ -48,6 +40,10 @@ const courseSchema = new Schema({
   },
 
   courseAuthorImage: {
+    type: String,
+  },
+
+  courseAuthorName: {
     type: String,
   },
 
