@@ -10,11 +10,10 @@ const Course = require("./model/course");
 const path = require("path");
 const multer = require("multer");
 
-const mongodb_url =
-  "mongodb+srv://YagnikAkbari12:Ppsv%402020@cluster0.dq3pwce.mongodb.net/CourseFinityDB?retryWrites=true&w=majority";
 
 require("dotenv").config();
 
+const mongodb_url = process.env.MONGO_URL;
 const store = new MongoDBStore({
   uri: mongodb_url,
   collection: "sessions",
