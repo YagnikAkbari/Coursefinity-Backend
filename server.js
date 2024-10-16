@@ -10,10 +10,9 @@ const Course = require("./model/course");
 const path = require("path");
 const multer = require("multer");
 
-
 require("dotenv").config();
 
-const mongodb_url = process.env.MONGO_URL;
+const mongodb_url = process.env.MONGODB_URL;
 const store = new MongoDBStore({
   uri: mongodb_url,
   collection: "sessions",
@@ -105,12 +104,20 @@ app.post(
 //   res.sendFile(path.resolve("build", "index.html"));
 // });
 
-app.use((req, res, next) => {
+app.use(
+  cors({
+    exposedHeaders: ["X-Total-Count"],
+  })
+);
+app.use(express.json());
+
+
+app.use((req, res, next) => {  
   if (!req.session.learner) {
     return next();
   }
-
-  Learner.findById(req.session.learner_id).then((student) => {
+  
+  Learner.findById(req.session.learner).then((student) => {
     req.learner = student;
     next();
   });
@@ -121,18 +128,12 @@ app.use((req, res, next) => {
     return next();
   }
 
-  Instructor.findById(req.session.instructor_id).then((instructor) => {
+  Instructor.findById(req.session.instructor).then((instructor) => {
     req.instructor = instructor;
     next();
   });
 });
 
-app.use(
-  cors({
-    exposedHeaders: ["X-Total-Count"],
-  })
-);
-app.use(express.json());
 
 app.use(authRoutes);
 app.use(courseRoutes);
@@ -339,6 +340,7 @@ app.get("/mycourses", async (req, res, next) => {
 
 app.get("/favouriteCourseList", async (req, res, next) => {
   try {
+    console.log("reqsession", req.session);    
     const session_learner = req.session.learner._id;
     const response = await Learner.find({ _id: session_learner });
     const favouriteCourseList = response[0].favouriteCourses;
@@ -352,8 +354,8 @@ app.get("/favouriteCourseList", async (req, res, next) => {
 mongoose
   .connect(mongodb_url)
   .then((db) => {
-    app.listen(5050);
-    console.log("Database is Connected.");
+    app.listen(process.env.PORT || 5050);
+    console.log(`Database is Connected. ${process.env.PORT}`);
   })
   .catch((err) => {
     console.log(err);
