@@ -89,14 +89,16 @@ exports.learnerSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, learner.password);
     if (doMatch) {
-      console.log("Login");
+      req.session.userId = learner._id;
       req.session.isLoggedIn = true;
       req.session.learner = learner;
       await req.session.save();
 
       return res.status(200).send({
         message: "Login Successfully",
-        role: "learner",
+        data: {
+          role: "learner",
+        },
       });
     } else {
       console.log("Error");
@@ -125,7 +127,7 @@ exports.instructorSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, instructor.password);
     if (doMatch) {
-      console.log("Instructor Login");
+      req.session.userId = instructor._id;
       req.session.isLoggedIn = true;
       req.session.instructor = instructor;
 
@@ -133,7 +135,9 @@ exports.instructorSignIn = async (req, res, next) => {
 
       return res.status(200).send({
         message: "Login Successfully",
-        role: "instructor",
+        data: {
+          role: "instructor",
+        },
       });
     } else {
       console.log("Error");
@@ -145,8 +149,42 @@ exports.instructorSignIn = async (req, res, next) => {
   }
 };
 
-exports.postLogout = (req, res, next) => {
-  req.session.destroy(err => {
-    return res.status(200).send({ message: "logout" });
-  });
+exports.postLogout = async (req, res, next) => {
+  try {
+    await req.session.destroy();
+    res.clearCookie("coursefinity.sid", { path: "/" });
+    res.status(200).json({ message: "Session destroyed and cookie removed." });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+exports.getUserDetails = async (req, res, next) => {
+  try {
+    const learnerId = req.session.learner._id;
+    const response = await Learner.find({ _id: learnerId });
+
+    res.status(200).send({
+      data: { name: response[0]?.name, email: response[0]?.email },
+      message: "User Fetched Successfully.",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+exports.getInstructorDetails = async (req, res, next) => {
+  try {
+    const instructorId = req.session.instructor._id;
+    const response = await Instructor.find({ _id: instructorId });
+
+    res.status(200).send({
+      data: { name: response[0]?.name, email: response[0]?.email },
+      message: "User Fetched Successfully.",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
 };

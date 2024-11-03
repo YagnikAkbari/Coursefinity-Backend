@@ -20,15 +20,17 @@ const authlearnerSchema = new Schema({
 
   favouriteCourses: [
     {
-      type: String,
+      type: Schema.Types.ObjectId,
       required: true,
+      ref: "Course",
     },
   ],
 
   myCourses: [
     {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Course",
     },
   ],
 });

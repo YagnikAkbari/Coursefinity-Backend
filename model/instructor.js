@@ -20,8 +20,9 @@ const authInstructorSchema = new Schema({
 
   myCourses: [
     {
-      type: String,
+      type: Schema.Types.ObjectId,
       required: true,
+      ref: "Course",
     },
   ],
 });

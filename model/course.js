@@ -47,6 +47,9 @@ const courseSchema = new Schema({
     type: String,
   },
 
+  createdAt: { type: Number, default: () => Date.now() },
+  deletedAt: { type: Number, default: null },
+
   courseModules: [
     {
       moduleTitle: {
