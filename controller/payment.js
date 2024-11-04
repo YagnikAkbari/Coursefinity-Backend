@@ -2,7 +2,7 @@ const Course = require("../model/course");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.payment = async (req, res) => {
-  const { courseId, email } = req.body;
+  const { courseId } = req.body;
 
   const course = await Course.findOne({ _id: courseId });
 
@@ -12,13 +12,16 @@ exports.payment = async (req, res) => {
     automatic_payment_methods: {
       enabled: true,
     },
+    // add details to define different users seprately (email, username, other data.)
     metadata: {
       courseId,
-      email,
     },
   });
 
-  res.send({
-    clientSecret: paymentIntent.client_secret,
+  res.status(200).send({
+    data: {
+      clientSecret: paymentIntent.client_secret,
+    },
+    message: "Payment intent successfully.",
   });
 };
