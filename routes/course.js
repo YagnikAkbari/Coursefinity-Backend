@@ -28,4 +28,10 @@ router.get(
   courseController.getFavouriteCourseIds
 );
 
+router.delete(
+  "/removefavouriteCourse",
+  common.roleBasedMiddleware("learner"),
+  courseController.removeFavouriteCourse
+);
+
 module.exports = router;

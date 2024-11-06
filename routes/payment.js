@@ -1,9 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const paymentController = require("../controller/payment");
-const { checkLearner } = require("../middlewares/learnerMiddlewares/auth");
+const common = require("../middlewares/index");
 
-router.use(checkLearner);
-router.post("/create-payment-intent", paymentController.payment);
+router.post(
+  "/create-payment-intent",
+  common?.roleBasedMiddleware("learner"),
+  paymentController.payment
+);
 
 module.exports = router;

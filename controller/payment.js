@@ -2,7 +2,8 @@ const Course = require("../model/course");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.payment = async (req, res) => {
-  const { courseId } = req.body;
+  try{
+    const { courseId } = req.body;
 
   const course = await Course.findOne({ _id: courseId });
 
@@ -24,4 +25,7 @@ exports.payment = async (req, res) => {
     },
     message: "Payment intent successfully.",
   });
+  }catch (err) {
+    console.log(err);
+  }
 };

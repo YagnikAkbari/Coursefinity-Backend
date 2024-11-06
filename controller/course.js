@@ -68,6 +68,33 @@ exports.postFavouriteCourse = async (req, res, next) => {
   }
 };
 
+exports.removeFavouriteCourse = async (req, res, next) => {
+  try {
+    const loggedInUserId = req.session.learner;
+    const { courseId } = req.body;
+
+    const course = await Course.findOne({ _id: courseId });
+    if (!course) {
+      return res.status(404).send({ message: "Course not found" });
+    }
+
+    const updatedUser = await Learner.findByIdAndUpdate(
+      loggedInUserId,
+      { $pull: { favouriteCourses: courseId } },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    res.status(200).send({ message: "Removed from favorites" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Error processing request" });
+  }
+};
+
 exports.getUserCourses = async (req, res, next) => {
   try {
     const userId = req.session.learner._id;
