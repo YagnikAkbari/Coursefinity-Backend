@@ -112,7 +112,7 @@ app.post(
 app.use(
   cors({
     exposedHeaders: ["X-Total-Count"],
-    origin: process.env.ORIGIN_URL ||"http://localhost:3000",
+    origin: process.env.ORIGIN_URL || "http://localhost:3000",
     method: ["POST", "GET"],
     credentials: true,
   })
