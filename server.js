@@ -103,16 +103,10 @@ app.post(
   }
 );
 
-// app.use(express.static(path.resolve(__dirname, "build")));
-
-// app.get("*", (req, res) => {
-//   res.sendFile(path.resolve("build", "index.html"));
-// });
-
 app.use(
   cors({
     exposedHeaders: ["X-Total-Count"],
-    origin: process.env.ORIGIN_URL || "http://localhost:3000",
+    origin: "*",
     method: ["POST", "GET"],
     credentials: true,
   })
