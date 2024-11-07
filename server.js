@@ -106,8 +106,8 @@ app.post(
 app.use(
   cors({
     exposedHeaders: ["X-Total-Count"],
-    origin: "*",
-    method: ["POST", "GET"],
+    origin: true,
+    methods: ["POST", "GET"],
     credentials: true,
   })
 );
