@@ -113,6 +113,10 @@ app.use(
 );
 app.use(express.json());
 
+app.get("/", (req, res, next) => {
+  res.status(200).json({ message: "Coursefinity Backend is running..." });
+});
+
 app.use(authRoutes);
 app.use(courseRoutes);
 app.use(paymentRoutes);
