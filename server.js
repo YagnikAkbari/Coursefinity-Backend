@@ -37,7 +37,7 @@ app.use("/videos", express.static(path.join(__dirname, "videos")));
 app.use(
   cors({
     exposedHeaders: ["X-Total-Count"],
-    origin: true,
+    origin: process.env.ALLOW_ORIGIN || "*",
     methods: ["POST", "GET", "DELETE"],
     credentials: true,
   })
