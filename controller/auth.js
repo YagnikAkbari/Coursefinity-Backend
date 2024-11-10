@@ -127,13 +127,14 @@ exports.learnerSignIn = async (req, res, next) => {
       req.session.learner = learner;
       await req.session.save();
 
-      return res.status(200).send({
+      res.status(200).send({
         code: 200,
         message: "Login Successfully",
         data: {
           role: "learner",
         },
       });
+      console.log("resheaders", res.getHeaders());
     } else {
       console.log("Error");
       return res
