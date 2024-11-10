@@ -10,6 +10,7 @@ const checkLearner = async (req, res, next) => {
   try {
     const student = await learner.findById(req.session.learner);
     if (!student) {
+      res.clearCookie("coursefinity.sid", { path: "/" });
       return res.status(404).send({ message: "Learner not found" });
     }
     req.learner = student;

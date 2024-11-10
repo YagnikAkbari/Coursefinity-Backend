@@ -9,6 +9,7 @@ const checkInstructor = async (req, res, next) => {
   try {
     const instructor = await Instructor.findById(req.session.instructor);
     if (!instructor) {
+      res.clearCookie("coursefinity.sid", { path: "/" });
       return res.status(404).send({ message: "Instructor not found" });
     }
     req.instructor = instructor;

@@ -1,20 +1,38 @@
 const bcrypt = require("bcryptjs");
+const Joi = require("joi");
 const Learner = require("../model/learner");
 const Instructor = require("../model/instructor");
 
+const signupSchema = Joi.object({
+  name: Joi.string().alphanum().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
+  cpassword: Joi.ref("password"),
+}).with("password", "cpassword");
+
 exports.learnerSignUp = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, cpassword } = req.body;
+    const { error } = signupSchema.validate({
+      name,
+      email,
+      password,
+      cpassword,
+    });
 
-    if (!email || !password || !name) {
-      return res
-        .status(400)
-        .send({ message: "Name, Email and password are required" });
+    if (error) {
+      return res.status(400).send({
+        code: 400,
+        message: "Name, Email and password are required",
+        errors: error,
+      });
     }
 
     const existingUser = await Learner.findOne({ email: email });
     if (existingUser) {
-      return res.status(409).send({ message: "Email already registered!" });
+      return res
+        .status(409)
+        .send({ message: "Email already registered, Please signin." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -27,9 +45,11 @@ exports.learnerSignUp = async (req, res, next) => {
 
     await learner.save();
     console.log("Learner Registered.");
-    return res
-      .status(201)
-      .send({ message: "Learner Registered!", role: "learner" });
+    return res.status(201).send({
+      message: "Learner Registered!",
+      code: 201,
+      data: { role: "learner" },
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).send({ message: "Internal Server Error" });
@@ -38,12 +58,21 @@ exports.learnerSignUp = async (req, res, next) => {
 
 exports.instructorSignUp = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, cpassword } = req.body;
 
-    if (!email || !password || !name) {
-      return res
-        .status(400)
-        .send({ message: "Name, Email and passwords are required" });
+    const { error } = signupSchema.validate({
+      name,
+      email,
+      password,
+      cpassword,
+    });
+
+    if (error) {
+      return res.status(400).send({
+        code: 400,
+        message: "Name, Email and password are required",
+        errors: error,
+      });
     }
 
     const existingUser = await Instructor.findOne({ email: email });
@@ -63,9 +92,11 @@ exports.instructorSignUp = async (req, res, next) => {
 
     await instructor.save();
     console.log("Instructor Registered.");
-    return res
-      .status(201)
-      .send({ message: "Instructor Registered!", role: "instructor" });
+    return res.status(201).send({
+      message: "Instructor Registered!",
+      code: 201,
+      data: { role: "instructor" },
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).send({ message: "Internal Server Error" });
@@ -84,7 +115,9 @@ exports.learnerSignIn = async (req, res, next) => {
 
     const learner = await Learner.findOne({ email });
     if (!learner) {
-      return res.status(401).send({ message: "Please register first!" });
+      return res
+        .status(400)
+        .send({ code: 400, message: "Please register first!" });
     }
 
     const doMatch = await bcrypt.compare(password, learner.password);
@@ -95,6 +128,7 @@ exports.learnerSignIn = async (req, res, next) => {
       await req.session.save();
 
       return res.status(200).send({
+        code: 200,
         message: "Login Successfully",
         data: {
           role: "learner",
@@ -102,7 +136,9 @@ exports.learnerSignIn = async (req, res, next) => {
       });
     } else {
       console.log("Error");
-      return res.status(401).send({ message: "Invalid credentials" });
+      return res
+        .status(400)
+        .send({ code: 400, message: "Invalid credentials" });
     }
   } catch (err) {
     console.error(err);
@@ -117,12 +153,14 @@ exports.instructorSignIn = async (req, res, next) => {
     if (!email || !password) {
       return res
         .status(400)
-        .send({ message: "Email and password are required" });
+        .send({ code: 400, message: "Email and password are required" });
     }
 
     const instructor = await Instructor.findOne({ email });
     if (!instructor) {
-      return res.status(401).send({ message: "Please register first!" });
+      return res
+        .status(400)
+        .send({ code: 400, message: "Please register first!" });
     }
 
     const doMatch = await bcrypt.compare(password, instructor.password);
@@ -134,6 +172,7 @@ exports.instructorSignIn = async (req, res, next) => {
       await req.session.save();
 
       return res.status(200).send({
+        code: 200,
         message: "Login Successfully",
         data: {
           role: "instructor",
@@ -141,7 +180,9 @@ exports.instructorSignIn = async (req, res, next) => {
       });
     } else {
       console.log("Error");
-      return res.status(401).send({ message: "Invalid credentials" });
+      return res
+        .status(400)
+        .send({ code: 400, message: "Invalid credentials" });
     }
   } catch (err) {
     console.error(err);
@@ -153,19 +194,42 @@ exports.postLogout = async (req, res, next) => {
   try {
     await req.session.destroy();
     res.clearCookie("coursefinity.sid", { path: "/" });
-    res.status(200).json({ message: "Session destroyed and cookie removed." });
+    res
+      .status(200)
+      .send({ code: 200, message: "Session destroyed and cookie removed." });
   } catch (err) {
     console.error(err);
     return res.status(500).send({ message: "Internal Server Error" });
   }
 };
 
+exports.checkAuth = async (req, res, next) => {
+  try {
+    if (req?.query?.role) {
+      if (req?.query?.role === "learner" && req?.session.learner) {
+        return res
+          .status(200)
+          .send({ code: 200, message: "Authenticated User." });
+      } else if (req?.query?.role === "instructor" && req?.session.instructor) {
+        return res
+          .status(200)
+          .send({ code: 200, message: "Authenticated User." });
+      }
+    } else {
+      res.status(401).send({ code: 401, message: "UnAuthenticated User." });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
+};
 exports.getUserDetails = async (req, res, next) => {
   try {
     const learnerId = req.session.learner._id;
     const response = await Learner.find({ _id: learnerId });
 
     res.status(200).send({
+      code: 200,
       data: { name: response[0]?.name, email: response[0]?.email },
       message: "User Fetched Successfully.",
     });
@@ -180,6 +244,7 @@ exports.getInstructorDetails = async (req, res, next) => {
     const response = await Instructor.find({ _id: instructorId });
 
     res.status(200).send({
+      code: 200,
       data: { name: response[0]?.name, email: response[0]?.email },
       message: "User Fetched Successfully.",
     });
@@ -187,4 +252,31 @@ exports.getInstructorDetails = async (req, res, next) => {
     console.error(err);
     return res.status(500).send({ message: "Internal Server Error" });
   }
+};
+
+exports.sendResetPasswordMail = async (req, res, next) => {
+  const { email } = req.body;
+  const { role } = req?.query;
+  if (role === "learner") {
+    const learner = await Learner.findOne({ email });
+    if (!learner) {
+      return res.status(404).send({ message: "Learner not found" });
+    }
+  } else if (role === "instructor") {
+    const instructor = await Instructor.findOne({ email });
+    if (!instructor) {
+      return res.status(404).send({ message: "Instructor not found" });
+    }
+  } else {
+    return res.status(404).send({ message: "Role not found" });
+  }
+
+  res.status(200).send({ code: 200, message: "email send successful." });
+};
+exports.resetUserPassword = (req, res, next) => {
+  const data = req.body;
+  if (data.pass !== data.cpass) {
+    return res.status(400).send({ message: "passowrd not matched!" });
+  }
+  res.status(200).send({ message: "passowrd change successful." });
 };

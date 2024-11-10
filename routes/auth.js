@@ -7,6 +7,8 @@ router.post("/learnerSignUp", authController.learnerSignUp);
 router.post("/learnerSignIn", authController.learnerSignIn);
 router.post("/instructorSignUp", authController.instructorSignUp);
 router.post("/instructorSignIn", authController.instructorSignIn);
+router.post("/resetEmail", authController.sendResetPasswordMail);
+router.post("/resetPassword", authController.resetUserPassword);
 
 router.post("/logout", authController.postLogout);
 
@@ -15,5 +17,6 @@ router.get(
   common.roleBasedMiddleware("learner"),
   authController.getUserDetails
 );
+router.get("/check/auth", authController.checkAuth);
 
 module.exports = router;

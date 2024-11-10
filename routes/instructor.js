@@ -26,7 +26,7 @@ router.post(
   uploadImage
 );
 router.delete(
-  "/deletecourse",
+  "/deletecourse/:id",
   common.roleBasedMiddleware("instructor"),
   courseController.deleteCourse
 );

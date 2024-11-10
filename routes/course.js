@@ -4,7 +4,7 @@ const courseController = require("../controller/course");
 const common = require("../middlewares/index");
 
 router.get("/courseList", courseController.getCourses);
-router.post("/courseById", courseController.getCourseById);
+router.get("/course/:id", courseController.getCourseById);
 
 router.post(
   "/addFavouriteCourse",
@@ -29,7 +29,7 @@ router.get(
 );
 
 router.delete(
-  "/removefavouriteCourse",
+  "/removefavouriteCourse/:id",
   common.roleBasedMiddleware("learner"),
   courseController.removeFavouriteCourse
 );
