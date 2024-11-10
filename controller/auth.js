@@ -125,6 +125,7 @@ exports.learnerSignIn = async (req, res, next) => {
       req.session.userId = learner._id;
       req.session.isLoggedIn = true;
       req.session.learner = learner;
+      console.log("Cookies", req.session);
       await req.session.save();
 
       res.status(200).send({

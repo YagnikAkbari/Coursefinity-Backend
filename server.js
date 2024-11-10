@@ -48,7 +48,6 @@ app.use(
   session({
     name: "coursefinity.sid",
     secret: process.env.SESSION_SECRET || "TopSecretHashKey396455jfhSfhvn8",
-    secure: true,
     resave: false,
     saveUninitialized: false,
     store: store,
