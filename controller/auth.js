@@ -1,7 +1,25 @@
+const Queue = require("bull");
 const bcrypt = require("bcryptjs");
 const Joi = require("joi");
 const Learner = require("../model/learner");
 const Instructor = require("../model/instructor");
+const { redisClient } = require("../config/redisClient");
+const { resetPasswordEmailTemplate } = require("../utils/contants");
+const { sendMail } = require("../utils/mail");
+const crypto = require("crypto");
+const emailQueue = new Queue("emails");
+emailQueue.process(async (job) => {
+  const { email, content } = job.data;
+  await sendMail(email, content);
+});
+
+function generateAccessToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 const signupSchema = Joi.object({
   name: Joi.string().alphanum().required(),
@@ -257,28 +275,147 @@ exports.getInstructorDetails = async (req, res, next) => {
 };
 
 exports.sendResetPasswordMail = async (req, res, next) => {
-  const { email } = req.body;
-  const { role } = req?.query;
-  if (role === "learner") {
-    const learner = await Learner.findOne({ email });
-    if (!learner) {
-      return res.status(404).send({ message: "Learner not found" });
-    }
-  } else if (role === "instructor") {
-    const instructor = await Instructor.findOne({ email });
-    if (!instructor) {
-      return res.status(404).send({ message: "Instructor not found" });
-    }
-  } else {
-    return res.status(404).send({ message: "Role not found" });
-  }
+  try {
+    const { email } = req.body;
+    const { role } = req?.query;
 
-  res.status(200).send({ code: 200, message: "email send successful." });
-};
-exports.resetUserPassword = (req, res, next) => {
-  const data = req.body;
-  if (data.pass !== data.cpass) {
-    return res.status(400).send({ message: "passowrd not matched!" });
+    if (role === "learner") {
+      const learner = await Learner.findOne({ email });
+      if (!learner) {
+        return res.status(404).send({ message: "Learner not found" });
+      }
+    } else if (role === "instructor") {
+      const instructor = await Instructor.findOne({ email });
+      if (!instructor) {
+        return res.status(404).send({ message: "Instructor not found" });
+      }
+    } else {
+      return res.status(404).send({ message: "Role not found" });
+    }
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    const tokenKey = `${email}`;
+
+    const accessToken = generateAccessToken();
+    const hashedToken = hashToken(accessToken);
+    await redisClient.setEx(
+      tokenKey,
+      6000,
+      `${JSON.stringify({ hashedToken, accessToken, email, role })}`
+    );
+    await redisClient.setEx(accessToken, 6000, `${email}`);
+    if (redisClient.isOpen) {
+      await redisClient.disconnect();
+    }
+    // avg time (0.25sec)250ms
+    emailQueue.add({
+      email,
+      content: resetPasswordEmailTemplate(accessToken, role),
+    });
+    // avg time 3.5sec
+    // await sendMail(email, resetPasswordEmailTemplate(accessToken, role));
+    res.status(200).send({ code: 200, message: "Email sent successfully." });
+  } catch (err) {
+    console.log("ERROR:RESETPASSWORDMAIL:-", err);
+    return res.status(500).send({ message: err?.message });
   }
-  res.status(200).send({ message: "passowrd change successful." });
+};
+
+exports.resetUserPassword = async (req, res, next) => {
+  try {
+    const { pass, cpass, token, role } = req.body;
+
+    if (!pass || !cpass) {
+      return res.status(400).send({ message: "Password required!" });
+    } else if (pass !== cpass) {
+      return res.status(400).send({ message: "passowrd not matched!" });
+    } else if (!token) {
+      return res.status(400).send({ message: "Token is required!" });
+    }
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    const senderEmail = await redisClient.get(token);
+    if (!senderEmail) {
+      if (redisClient.isOpen) {
+        await redisClient.disconnect();
+      }
+      return res
+        .status(400)
+        .send({ message: "Invalid Token! Please send request again" });
+    }
+    const resetData = await redisClient.get(senderEmail);
+    const resetDataParsed = JSON.parse(resetData);
+    if (
+      !resetDataParsed?.accessToken ||
+      resetDataParsed?.accessToken !== token
+    ) {
+      if (redisClient.isOpen) {
+        await redisClient.disconnect();
+      }
+      return res
+        .status(400)
+        .send({ message: "Invalid Token! Please send request again" });
+    }
+
+    const hashedPassword = await bcrypt.hash(pass, 12);
+
+    const updatePassword = async (model, email, hashedPassword) => {
+      return model.findOneAndUpdate(
+        { email },
+        { $set: { password: hashedPassword } },
+        { new: true }
+      );
+    };
+
+    let updateResponse;
+    if (role === "learner" && resetDataParsed.role === role) {
+      updateResponse = await updatePassword(
+        Learner,
+        senderEmail,
+        hashedPassword
+      );
+    } else if (role === "instructor" && resetDataParsed.role === role) {
+      updateResponse = await updatePassword(
+        Instructor,
+        senderEmail,
+        hashedPassword
+      );
+    } else {
+      return res.status(400).send({ message: "Role not found or mismatched!" });
+    }
+
+    if (!updateResponse) {
+      return res.status(404).send({ message: "User not found!" });
+    }
+
+    await redisClient.del(token, (err, response) => {
+      if (err) {
+        console.error("Error deleting key:", err);
+      } else {
+        console.log("Key deleted:", response);
+      }
+    });
+    await redisClient.del(senderEmail, (err, response) => {
+      if (err) {
+        console.error("Error deleting key:", err);
+      } else {
+        console.log("Key deleted:", response);
+      }
+    });
+    if (redisClient.isOpen) {
+      await redisClient.disconnect();
+    }
+
+    return res
+      .status(200)
+      .send({ code: 200, message: "passowrd change successful." });
+  } catch (err) {
+    console.log("ERROR:RESET PASSWORD:-", err);
+    if (redisClient.isOpen) {
+      await redisClient.disconnect();
+    }
+    return res.status(500).send({ message: err?.message });
+  }
 };
