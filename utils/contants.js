@@ -137,7 +137,7 @@ const resetPasswordEmailTemplate = (accessToken, role) => {
             </tr>
             <tr>
               <td style="text-align: center; padding-top: 16px;">
-                <a href='${process.env.FRONTEND_URL}?reset_token=${accessToken}&role=${role}' target="_blank" class="reset-password-btn">Reset Password</button>
+                <a href='${process.env.FRONTEND_URL}/reset-password?reset_token=${accessToken}&role=${role}' target="_blank" class="reset-password-btn">Reset Password</button>
               </td>
             </tr>
           </tbody>
