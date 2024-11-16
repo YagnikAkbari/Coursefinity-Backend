@@ -292,22 +292,18 @@ exports.sendResetPasswordMail = async (req, res, next) => {
     } else {
       return res.status(404).send({ message: "Role not found" });
     }
-    if (!redisClient.isOpen) {
-      await redisClient.connect();
-    }
+    const client = redisClient();
     const tokenKey = `${email}`;
-
     const accessToken = generateAccessToken();
     const hashedToken = hashToken(accessToken);
-    await redisClient.setEx(
+    await client.set(
       tokenKey,
-      6000,
       `${JSON.stringify({ hashedToken, accessToken, email, role })}`
     );
-    await redisClient.setEx(accessToken, 6000, `${email}`);
-    if (redisClient.isOpen) {
-      await redisClient.disconnect();
-    }
+    await client.pexpire(accessToken, 3_600_000);
+    await client.set(accessToken, `${email}`);
+    await client.pexpire(tokenKey, 3_600_000);
+
     // avg time (0.25sec)250ms
     emailQueue.add({
       email,
@@ -333,27 +329,18 @@ exports.resetUserPassword = async (req, res, next) => {
     } else if (!token) {
       return res.status(400).send({ message: "Token is required!" });
     }
-    if (!redisClient.isOpen) {
-      await redisClient.connect();
-    }
-    const senderEmail = await redisClient.get(token);
+    console.log("resetData token", token);
+    const client = redisClient();
+    const senderEmail = await client.get(token);
+    console.log("resetData token", senderEmail);
     if (!senderEmail) {
-      if (redisClient.isOpen) {
-        await redisClient.disconnect();
-      }
       return res
         .status(400)
         .send({ message: "Invalid Token! Please send request again" });
     }
-    const resetData = await redisClient.get(senderEmail);
-    const resetDataParsed = JSON.parse(resetData);
-    if (
-      !resetDataParsed?.accessToken ||
-      resetDataParsed?.accessToken !== token
-    ) {
-      if (redisClient.isOpen) {
-        await redisClient.disconnect();
-      }
+    const resetData = await client.get(senderEmail);
+    console.log("resetData token", resetData);
+    if (!resetData?.accessToken || resetData?.accessToken !== token) {
       return res
         .status(400)
         .send({ message: "Invalid Token! Please send request again" });
@@ -370,13 +357,13 @@ exports.resetUserPassword = async (req, res, next) => {
     };
 
     let updateResponse;
-    if (role === "learner" && resetDataParsed.role === role) {
+    if (role === "learner" && resetData.role === role) {
       updateResponse = await updatePassword(
         Learner,
         senderEmail,
         hashedPassword
       );
-    } else if (role === "instructor" && resetDataParsed.role === role) {
+    } else if (role === "instructor" && resetData.role === role) {
       updateResponse = await updatePassword(
         Instructor,
         senderEmail,
@@ -389,33 +376,18 @@ exports.resetUserPassword = async (req, res, next) => {
     if (!updateResponse) {
       return res.status(404).send({ message: "User not found!" });
     }
+    console.log("resetData delete", token);
+    const deletableTokens = [token, senderEmail];
+    await client.del(...deletableTokens);
 
-    await redisClient.del(token, (err, response) => {
-      if (err) {
-        console.error("Error deleting key:", err);
-      } else {
-        console.log("Key deleted:", response);
-      }
-    });
-    await redisClient.del(senderEmail, (err, response) => {
-      if (err) {
-        console.error("Error deleting key:", err);
-      } else {
-        console.log("Key deleted:", response);
-      }
-    });
-    if (redisClient.isOpen) {
-      await redisClient.disconnect();
-    }
+    console.log("resetData delete not logged again", token);
 
     return res
       .status(200)
       .send({ code: 200, message: "passowrd change successful." });
   } catch (err) {
     console.log("ERROR:RESET PASSWORD:-", err);
-    if (redisClient.isOpen) {
-      await redisClient.disconnect();
-    }
+
     return res.status(500).send({ message: err?.message });
   }
 };
