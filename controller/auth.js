@@ -305,12 +305,12 @@ exports.sendResetPasswordMail = async (req, res, next) => {
     await client.pexpire(tokenKey, 3_600_000);
 
     // avg time (0.25sec)250ms
-    emailQueue.add({
-      email,
-      content: resetPasswordEmailTemplate(accessToken, role),
-    });
+    // emailQueue.add({
+    //   email,
+    //   content: resetPasswordEmailTemplate(accessToken, role),
+    // });
     // avg time 3.5sec
-    // await sendMail(email, resetPasswordEmailTemplate(accessToken, role));
+    await sendMail(email, resetPasswordEmailTemplate(accessToken, role));
     res.status(200).send({ code: 200, message: "Email sent successfully." });
   } catch (err) {
     console.log("ERROR:RESETPASSWORDMAIL:-", err);
