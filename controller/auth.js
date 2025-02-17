@@ -234,27 +234,6 @@ exports.postLogout = async (req, res, next) => {
   }
 };
 
-exports.checkAuth = async (req, res, next) => {
-  try {
-    if (req?.query?.role) {
-      if (req?.query?.role === "learner" && req.learner) {
-        return res
-          .status(200)
-          .send({ code: 200, message: "Authenticated User." });
-      } else if (req?.query?.role === "instructor" && req.instructor) {
-        return res
-          .status(200)
-          .send({ code: 200, message: "Authenticated User." });
-      }
-    } else {
-      res.status(401).send({ code: 401, message: "UnAuthenticated User." });
-    }
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send({ message: "Internal Server Error" });
-  }
-};
-
 exports.getUserDetails = async (req, res, next) => {
   try {
     const learnerId = req.learner._id;

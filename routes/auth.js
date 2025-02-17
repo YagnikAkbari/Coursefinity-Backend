@@ -41,6 +41,5 @@ router.get(
   common.roleBasedMiddleware("learner"),
   authController.getUserDetails
 );
-router.get("/check/auth", authController.checkAuth);
 
 module.exports = router;
