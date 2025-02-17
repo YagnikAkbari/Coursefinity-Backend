@@ -7,6 +7,7 @@ const { redisClient } = require("../config/redisClient");
 const { resetPasswordEmailTemplate } = require("../utils/contants");
 const { sendMail } = require("../utils/mail");
 const crypto = require("crypto");
+const { generateJwtToken } = require("../utils/getToken");
 const emailQueue = new Queue("emails");
 emailQueue.process(async (job) => {
   const { email, content } = job.data;
@@ -140,20 +141,24 @@ exports.learnerSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, learner.password);
     if (doMatch) {
-      req.session.userId = learner._id;
-      req.session.isLoggedIn = true;
-      req.session.learner = learner;
-      console.log("Cookies", req.session);
-      await req.session.save();
-
+      const token = generateJwtToken({
+        id: learner?._id,
+        email: learner?.email,
+      });
+      res.cookie("coursefinity.id", token, {
+        maxAge: 1000 * 60 * 60,
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+      });
       res.status(200).send({
         code: 200,
         message: "Login Successfully",
         data: {
           role: "learner",
+          authToken: token,
         },
       });
-      console.log("resheaders", res.getHeaders());
+      
     } else {
       console.log("Error");
       return res
@@ -185,17 +190,21 @@ exports.instructorSignIn = async (req, res, next) => {
 
     const doMatch = await bcrypt.compare(password, instructor.password);
     if (doMatch) {
-      req.session.userId = instructor._id;
-      req.session.isLoggedIn = true;
-      req.session.instructor = instructor;
-
-      await req.session.save();
-
+      const token = generateJwtToken({
+        id: instructor?._id,
+        email: instructor?.email,
+      });
+      res.cookie("coursefinity.id", token, {
+        maxAge: 1000 * 60 * 60,
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+      });
       return res.status(200).send({
         code: 200,
         message: "Login Successfully",
         data: {
           role: "instructor",
+          authToken: token,
         },
       });
     } else {
@@ -212,7 +221,9 @@ exports.instructorSignIn = async (req, res, next) => {
 
 exports.postLogout = async (req, res, next) => {
   try {
-    await req.session.destroy();
+    if (req.session) {
+      await req.session.destroy();
+    }
     res.clearCookie("coursefinity.sid", { path: "/" });
     res
       .status(200)
@@ -226,11 +237,11 @@ exports.postLogout = async (req, res, next) => {
 exports.checkAuth = async (req, res, next) => {
   try {
     if (req?.query?.role) {
-      if (req?.query?.role === "learner" && req?.session.learner) {
+      if (req?.query?.role === "learner" && req.learner) {
         return res
           .status(200)
           .send({ code: 200, message: "Authenticated User." });
-      } else if (req?.query?.role === "instructor" && req?.session.instructor) {
+      } else if (req?.query?.role === "instructor" && req.instructor) {
         return res
           .status(200)
           .send({ code: 200, message: "Authenticated User." });
@@ -243,9 +254,10 @@ exports.checkAuth = async (req, res, next) => {
     return res.status(500).send({ message: "Internal Server Error" });
   }
 };
+
 exports.getUserDetails = async (req, res, next) => {
   try {
-    const learnerId = req.session.learner._id;
+    const learnerId = req.learner._id;
     const response = await Learner.find({ _id: learnerId });
 
     res.status(200).send({
@@ -329,17 +341,17 @@ exports.resetUserPassword = async (req, res, next) => {
     } else if (!token) {
       return res.status(400).send({ message: "Token is required!" });
     }
-    console.log("resetData token", token);
+    
     const client = redisClient();
     const senderEmail = await client.get(token);
-    console.log("resetData token", senderEmail);
+    
     if (!senderEmail) {
       return res
         .status(400)
         .send({ message: "Invalid Token! Please send request again" });
     }
     const resetData = await client.get(senderEmail);
-    console.log("resetData token", resetData);
+    
     if (!resetData?.accessToken || resetData?.accessToken !== token) {
       return res
         .status(400)
@@ -376,11 +388,11 @@ exports.resetUserPassword = async (req, res, next) => {
     if (!updateResponse) {
       return res.status(404).send({ message: "User not found!" });
     }
-    console.log("resetData delete", token);
+    
     const deletableTokens = [token, senderEmail];
     await client.del(...deletableTokens);
 
-    console.log("resetData delete not logged again", token);
+    
 
     return res
       .status(200)

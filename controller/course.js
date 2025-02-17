@@ -53,7 +53,7 @@ exports.getCourseById = async (req, res, next) => {
 
 exports.postFavouriteCourse = async (req, res, next) => {
   try {
-    const loggedInUserId = req.session.learner;
+    const loggedInUserId = req.learner;
 
     const { courseId } = req.body;
 
@@ -77,7 +77,7 @@ exports.postFavouriteCourse = async (req, res, next) => {
 
 exports.removeFavouriteCourse = async (req, res, next) => {
   try {
-    const loggedInUserId = req.session.learner;
+    const loggedInUserId = req.learner;
     const courseId = req?.params?.id ?? null;
 
     const course = await Course.findOne({ _id: courseId });
@@ -100,7 +100,7 @@ exports.removeFavouriteCourse = async (req, res, next) => {
 
 exports.getUserCourses = async (req, res, next) => {
   try {
-    const userId = req.session.learner._id;
+    const userId = req.learner._id;
 
     const response = await Learner.findById(userId).populate("myCourses");
 
@@ -117,7 +117,7 @@ exports.getUserCourses = async (req, res, next) => {
 
 exports.getUserCreatedCourses = async (req, res, next) => {
   try {
-    const instructorId = req.session.instructor._id;
+    const instructorId = req?.instructor._id;
     const response = await Instructor.find({ _id: instructorId }).populate(
       "myCourses"
     );
@@ -227,7 +227,7 @@ exports.deleteCourse = async (req, res, next) => {
 
 exports.getFavouriteCourse = async (req, res, next) => {
   try {
-    const learnerId = req.session.learner._id;
+    const learnerId = req.learner._id;
     const response = await Learner.find({ _id: learnerId }).populate(
       "favouriteCourses"
     );
@@ -246,7 +246,7 @@ exports.getFavouriteCourse = async (req, res, next) => {
 
 exports.getFavouriteCourseIds = async (req, res, next) => {
   try {
-    const learnerId = req.session.learner._id;
+    const learnerId = req.learner._id;
     const response = await Learner.find({ _id: learnerId });
     const favouriteCourseList = response[0].favouriteCourses;
 
