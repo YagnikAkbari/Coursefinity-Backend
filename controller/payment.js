@@ -1,5 +1,6 @@
 const Course = require("../model/course");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.payment = async (req, res) => {
   try {
@@ -13,12 +14,23 @@ exports.payment = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: course.coursePrice * 80 * 100,
       currency: "inr",
+      description: "This Is Indian Payment Method",
       automatic_payment_methods: {
         enabled: true,
       },
+      shipping: {
+        name: 'Yagnik Akbari',
+        address: {
+          line1: 'Chandralock Society',
+          postal_code: '380052',
+          city: 'Ahmedabad',
+          state: 'GJ',
+          country: 'IN',
+        },
+      },
       // add details to define different users seprately (email, username, other data.)
       metadata: {
-        courseId,
+        courseId,        
       },
     });
 
