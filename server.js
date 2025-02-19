@@ -41,10 +41,13 @@ app.post(
   express.raw({ type: "application/json" }),
   async (request, response) => {
     let event;
-    // console.log("request", request);
+    console.log("request", request.headers);
+    console.log("---------------------------");
+    
+    console.log('request sign', request.headers["stripe-signature"])
 
     // const learnerSession = request.learner._id;
-    if (process.env.ENDPOINT_SECRET) {
+    
       const signature = request.headers["stripe-signature"];
       try {
         event = stripe.webhooks.constructEvent(
@@ -52,11 +55,13 @@ app.post(
           signature,
           process.env.ENDPOINT_SECRET
         );
+        console.log("request endpoint", process.env.ENDPOINT_SECRET);
+        
       } catch (err) {
         console.log(`⚠️ Webhook signature verification failed.`, err.message);
         return response.sendStatus(400);
       }
-    }
+    
 
     console.log("event-log", event);
 
