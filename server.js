@@ -49,7 +49,7 @@ app.post(
     // const learnerSession = request.learner._id;
     
       const signature = request.headers["stripe-signature"];
-      console.log("request endpoint", process.env.ENDPOINT_SECRET);
+      console.log("request endpoint", process.env.ENDPOINT_SECRET, request.body);
       try {
         event = stripe.webhooks.constructEvent(
           request.body,
