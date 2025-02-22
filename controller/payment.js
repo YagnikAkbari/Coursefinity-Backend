@@ -32,7 +32,7 @@ exports.payment = async (req, res) => {
       // add details to define different users seprately (email, username, other data.)
       metadata: {
         courseId,
-        id,
+        id: id.toString(),
         name,
         email,
       },
