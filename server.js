@@ -34,6 +34,7 @@ const authRoutes = require("./routes/auth");
 const courseRoutes = require("./routes/course");
 const paymentRoutes = require("./routes/payment");
 const instructorRoute = require("./routes/instructor");
+const Learner = require("./model/learner");
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 app.post(
