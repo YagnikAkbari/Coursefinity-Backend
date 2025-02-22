@@ -1,10 +1,11 @@
 const Course = require("../model/course");
-const Stripe = require('stripe');
+const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.payment = async (req, res) => {
   try {
     const { courseId } = req.body;
+    const { _id: id, name, email } = req?.learner;
 
     const course = await Course.findOne({ _id: courseId });
     if (!course) {
@@ -19,18 +20,21 @@ exports.payment = async (req, res) => {
         enabled: true,
       },
       shipping: {
-        name: 'Yagnik Akbari',
+        name: "Yagnik Akbari",
         address: {
-          line1: 'Chandralock Society',
-          postal_code: '380052',
-          city: 'Ahmedabad',
-          state: 'GJ',
-          country: 'IN',
+          line1: "Chandralock Society",
+          postal_code: "380052",
+          city: "Ahmedabad",
+          state: "GJ",
+          country: "IN",
         },
       },
       // add details to define different users seprately (email, username, other data.)
       metadata: {
-        courseId,        
+        courseId,
+        id,
+        name,
+        email,
       },
     });
 
@@ -42,6 +46,6 @@ exports.payment = async (req, res) => {
       message: "Payment intent successfully.",
     });
   } catch (err) {
-    console.log(err);
+    console.log("PAYMENT CRETION ERRRO:--", err);
   }
 };

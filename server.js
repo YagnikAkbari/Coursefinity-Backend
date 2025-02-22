@@ -41,57 +41,53 @@ app.post(
   express.raw({ type: "application/json" }),
   async (request, response) => {
     let event;
-    console.log("request", request.headers, request.body.length , request.body.toString('utf8'));
-    console.log("---------------------------");
-    
-    console.log('request sign', request.headers["stripe-signature"])
 
-    // const learnerSession = request.learner._id;
-    
-      const signature = request.headers["stripe-signature"];
-      console.log("request endpoint", process.env.ENDPOINT_SECRET, request.body);
-      try {
-        event = stripe.webhooks.constructEvent(
-          request.body,
-          signature,
-          process.env.ENDPOINT_SECRET
-        );
-        
-      } catch (err) {
-        console.log(`⚠️ Webhook signature verification failed.`, err.message);
-        return response.sendStatus(400);
-      }
-    
+    const signature = request.headers["stripe-signature"];
 
-    console.log("event-log", event);
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        signature,
+        process.env.ENDPOINT_SECRET
+      );
+    } catch (err) {
+      console.log(`⚠️ Webhook signature verification failed.`, err.message);
+      return response.sendStatus(400);
+    }
+
+    console.log("event-log", event.type, event);
 
     switch (event.type) {
       case "payment_intent.succeeded":
-        console.log("event-success", event);
+        console.log("event triggers---", request.body.toString());
         const paymentIntent = event.data.object;
 
-        // add logic for adding purchased courseId to user's my courses array
         const user = await Learner.findOne({
-          email: paymentIntent.metadata.email,
+          email: paymentIntent.metadata.id,
         });
         console.log("useruser", user);
+        if (!user) {
+          throw new Error("User not found");
+        }
 
-        // user.courseId = user.courseId.push(paymentIntent.metadata.courseId);
+        if (!user.myCourses.includes(paymentIntent.metadata.courseId)) {
+          user.myCourses.push(paymentIntent.metadata.courseId);
+        }
 
-        // Course.findByIdAndUpdate(
-        //   {
-        //     _id: learnerSession,
-        //   },
-        //   { myCourses: user.courseId }
-        // ).then(() => {
-        //   console.log("Added");
-        // });
+        Course.findByIdAndUpdate(
+          {
+            _id: paymentIntent.metadata.id,
+          },
+          { myCourses: user.courseId }
+        ).then(() => {});
 
-        await user.save();
+        const updatedUser = await user.save();
+        if (!updatedUser) {
+          console.log("Can't update user.");
+        }
         break;
       case "payment_intent.created":
-        console.log("requeste----", request.body.toString());
-
+        console.log("event triggers---", request.body.toString());
         break;
       default:
         console.log(`Unhandled event type ${event.type}.`);
