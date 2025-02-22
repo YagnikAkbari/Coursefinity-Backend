@@ -41,7 +41,7 @@ app.post(
   express.raw({ type: "application/json" }),
   async (request, response) => {
     let event;
-    console.log("request", request.headers);
+    console.log("request", request.headers, request.body.length , request.body.toString('utf8'));
     console.log("---------------------------");
     
     console.log('request sign', request.headers["stripe-signature"])
