@@ -63,12 +63,9 @@ app.post(
         console.log("event triggers---", request.body.toString());
         const paymentIntent = event.data.object;
 
-        const user = await Learner.findOne({
-          email: paymentIntent.metadata.id,
-        });
-        console.log("useruser", user);
+        const user = await Learner.findById(paymentIntent.metadata.id);
         if (!user) {
-          throw new Error("User not found");
+          break;
         }
 
         if (!user.myCourses.includes(paymentIntent.metadata.courseId)) {
