@@ -251,7 +251,7 @@ exports.getUserDetails = async (req, res, next) => {
 };
 exports.getInstructorDetails = async (req, res, next) => {
   try {
-    const instructorId = req.session.instructor._id;
+    const instructorId = req?.instructor._id;
     const response = await Instructor.find({ _id: instructorId });
 
     res.status(200).send({

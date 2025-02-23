@@ -139,13 +139,13 @@ exports.createCourse = async (req, res, next) => {
   try {
     const data = req.body;
 
-    const session_instructor = req.session.instructor;
+    const session_instructor = req?.instructor;
     const modules = data.courseModules;
 
     const course = new Course({
       courseTitle: data.courseTitle,
       courseAuthor: session_instructor,
-      courseImageUrl: "",
+      courseImageUrl: data.courseImageUrl,
       coursePrice: data.coursePrice,
       courseDescription: data.courseDescription,
       courseLanguage: data.courseLanguage,
@@ -188,7 +188,7 @@ exports.createCourse = async (req, res, next) => {
 
 exports.deleteCourse = async (req, res, next) => {
   try {
-    const session_instructor_id = req.session.instructor._id;
+    const session_instructor_id = req?.instructor._id;
     const courseId = req.params.id;
     const instructor = await Instructor.findOne({ _id: session_instructor_id });
 
