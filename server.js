@@ -35,6 +35,7 @@ const courseRoutes = require("./routes/course");
 const paymentRoutes = require("./routes/payment");
 const instructorRoute = require("./routes/instructor");
 const Learner = require("./model/learner");
+const uploadAssetsRoute = require("./routes/upload");
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 app.post(
@@ -131,16 +132,17 @@ app.use(authRoutes);
 app.use(courseRoutes);
 app.use(paymentRoutes);
 app.use(instructorRoute);
+app.use(uploadAssetsRoute);
 
-app.post("/uploadModules", (req, res, next) => {
-  const courseId = req.body;
+// app.post("/uploadModules", (req, res, next) => {
+//   const courseId = req.body;
 
-  console.log(courseId);
-});
+//   console.log(courseId);
+// });
 
-app.post("/googleAuth", (req, res, next) => {
-  const data = req.body;
-});
+// app.post("/googleAuth", (req, res, next) => {
+//   const data = req.body;
+// });
 
 mongoose
   .connect(mongodb_url)
